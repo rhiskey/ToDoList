@@ -13,7 +13,6 @@ protocol TaskViewControllerDelegate {
 }
 
 class TaskListViewController: UITableViewController {
-    private let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     private let cellID = "task"
     private var taskList: [Task] = []
 
@@ -22,7 +21,7 @@ class TaskListViewController: UITableViewController {
         view.backgroundColor = .white
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellID)
         setupNavigationBar()
-        fetchData()
+        taskList = StorageManager.shared.fetchData()
     }
 
     private func setupNavigationBar() {
@@ -56,15 +55,6 @@ class TaskListViewController: UITableViewController {
         showAlert(with: "New Task", and: "What do you want to do?")
     }
     
-    private func fetchData() {
-        let fetchRequest = Task.fetchRequest()
-        
-        do {
-            taskList = try context.fetch(fetchRequest)
-        } catch let error {
-            print("Failed to fetch data", error)
-        }
-    }
     
     private func showAlert(with title: String, and message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -82,6 +72,8 @@ class TaskListViewController: UITableViewController {
     }
     
     private func save(_ taskName: String) {
+        let context = StorageManager.shared.persistentContainer.viewContext
+        
         guard let entityDescription = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
         guard let task = NSManagedObject(entity: entityDescription, insertInto: context) as? Task else { return }
         task.title = taskName
@@ -119,7 +111,7 @@ extension TaskListViewController {
 // MARK: - TaskViewControllerDelegate
 extension TaskListViewController: TaskViewControllerDelegate {
     func reloadData() {
-        fetchData()
+        taskList = StorageManager.shared.fetchData()
         tableView.reloadData()
     }
 }
