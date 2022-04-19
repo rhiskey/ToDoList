@@ -104,19 +104,11 @@ class TaskListViewController: UITableViewController {
         guard let task = NSManagedObject(entity: entityDescription, insertInto: context) as? Task else { return }
         task.title = ""
         
-        
-//        task.title = taskName
-//        taskList.remove(at: task.)
-        
-        // TODO: delete task from table
-        
-        //let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
-        //tableView.insertRows(at: [cellIndex], with: .automatic)
-        
         if context.hasChanges {
             do {
                 context.delete(task)
                 try context.save()
+                reloadData()
             } catch let error {
                 print(error)
             }
@@ -148,6 +140,7 @@ extension TaskListViewController {
             and: "Do you really want to edit task?",
             on: taskInCell
         )
+
     }
     
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
@@ -210,13 +203,12 @@ extension TaskListViewController {
     
     private func showAlert(with title: String, and message: String, on task: Task) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let deleteAction = UIAlertAction(title: "Delete", style: .default) { _ in
-            //guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
+        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
             guard let title = task.title else { return }
             self.deleteTask(title)
         }
         
-        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
+        let cancelAction = UIAlertAction(title: "Cancel", style: .default)
         
         alert.addAction(cancelAction)
         alert.addAction(deleteAction)
