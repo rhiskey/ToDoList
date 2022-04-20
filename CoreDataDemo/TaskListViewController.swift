@@ -21,7 +21,7 @@ class TaskListViewController: UITableViewController {
         view.backgroundColor = .white
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellID)
         setupNavigationBar()
-        taskList = StorageManager.shared.fetchData()
+        fetchData()
     }
 
     private func setupNavigationBar() {
@@ -73,6 +73,17 @@ class TaskListViewController: UITableViewController {
     private func deleteTask(_ taskToDelete: Task) {
         StorageManager.shared.delete(taskToDelete)
         reloadData()
+    }
+    
+    private func fetchData() {
+        StorageManager.shared.fetchData { result in
+            switch result {
+            case .success(let tasks):
+                self.taskList = tasks
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
     }
 }
 
