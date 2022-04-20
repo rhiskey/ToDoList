@@ -56,63 +56,23 @@ class TaskListViewController: UITableViewController {
     }
     
     private func save(_ taskName: String) {
-        let context = StorageManager.shared.persistentContainer.viewContext
-        
-        guard let entityDescription = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
-        guard let task = NSManagedObject(entity: entityDescription, insertInto: context) as? Task else { return }
-        task.title = taskName
-        taskList.append(task)
-        
-        let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
-        tableView.insertRows(at: [cellIndex], with: .automatic)
-        
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch let error {
-                print(error)
-            }
+        StorageManager.shared.save(taskName) { task in
+            self.taskList.append(task)
+            self.tableView.insertRows(
+                at: [IndexPath(row: self.taskList.count - 1, section: 0)],
+                with: .automatic
+            )
         }
     }
     
-    
-    private func edit(_ taskName: String) {
-        let context = StorageManager.shared.persistentContainer.viewContext
-        
-        guard let entityDescription = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
-        guard let task = NSManagedObject(entity: entityDescription, insertInto: context) as? Task else { return }
-        task.title = taskName
-        //Replace
-//        taskList.re(task)
-        
-//        let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
-//        tableView.insertRows(at: [cellIndex], with: .automatic)
-        
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch let error {
-                print(error)
-            }
-        }
+    private func edit(existing selectedTask: Task, new taskName: String) {
+        StorageManager.shared.edit(selectedTask, newName: taskName)
+        reloadData()
     }
     
-    private func deleteTask(_ taskName: String) {
-        let context = StorageManager.shared.persistentContainer.viewContext
-        
-        guard let entityDescription = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
-        guard let task = NSManagedObject(entity: entityDescription, insertInto: context) as? Task else { return }
-        task.title = ""
-        
-        if context.hasChanges {
-            do {
-                context.delete(task)
-                try context.save()
-                reloadData()
-            } catch let error {
-                print(error)
-            }
-        }
+    private func deleteTask(_ taskToDelete: Task) {
+        StorageManager.shared.delete(taskToDelete)
+        reloadData()
     }
 }
 
@@ -131,27 +91,21 @@ extension TaskListViewController {
         return cell
     }
     
-    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         print(taskList[indexPath.row])
         let taskInCell =  taskList[indexPath.row]
         
-        showAlert(
-            with: "Edit",
-            and: "Do you really want to edit task?",
-            on: taskInCell
-        )
-
+        showAlert(with: "Edit", and: "Edit this task:", selected: taskInCell)
     }
     
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             let taskInCell =  taskList[indexPath.row]
-            StorageManager.shared.deleteContext(taskInCell)
             
             showAlert(
                 with: "Warning!",
                 and: "Do you really want to delete task?",
-                on: taskInCell
+                delete: taskInCell
             )
         }
     }
@@ -184,11 +138,11 @@ extension TaskListViewController {
         present(alert, animated: true)
     }
     
-    private func showAlert(with title: String, and message: String, edit task: Task) {
+    private func showAlert(with title: String, and message: String, selected task: Task) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
-            self.edit(task)
+            guard let taskName = alert.textFields?.first?.text, !taskName.isEmpty else { return }
+            self.edit(existing: task, new: taskName)
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
@@ -201,11 +155,10 @@ extension TaskListViewController {
         present(alert, animated: true)
     }
     
-    private func showAlert(with title: String, and message: String, on task: Task) {
+    private func showAlert(with title: String, and message: String, delete task: Task) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
-            guard let title = task.title else { return }
-            self.deleteTask(title)
+            self.deleteTask(task)
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .default)

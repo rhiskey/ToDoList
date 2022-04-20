@@ -22,17 +22,10 @@ class StorageManager {
         return container
     }()
     
-    // MARK: - Core Data Saving support
-    func saveContext() {
-        let context = persistentContainer.viewContext
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                let nserror = error as NSError
-                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
-            }
-        }
+    private let viewContext: NSManagedObjectContext
+    
+    private init() {
+        viewContext = persistentContainer.viewContext
     }
     
     func fetchData() -> [Task] {
@@ -48,35 +41,33 @@ class StorageManager {
         return []
     }
     
-    // MARK: - Core Data Updating support
-    func updateContext(_ taskToUpdate: Task) {
-        let context = persistentContainer.viewContext
-        let fetchRequest = Task.fetchRequest()
-        
-        if context.hasChanges {
+    func save(_ taskName: String, completion: (Task) -> Void) {
+        let task = Task(context: viewContext)
+        task.title = taskName
+        completion(task)
+        saveContext()
+    }
+    
+    func edit(_ task: Task, newName: String) {
+        task.title = newName
+        saveContext()
+    }
+    
+    func delete(_ task: Task) {
+        viewContext.delete(task)
+        saveContext()
+    }
+    
+    // MARK: - Core Data Saving support
+    func saveContext() {
+        if viewContext.hasChanges {
             do {
-//                try context.update()
+                try viewContext.save()
             } catch {
                 let nserror = error as NSError
                 fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
             }
         }
-        
     }
-    
-    // MARK: - Core Data Deleting support
-    func deleteContext(_ taskToDelete: Task) {
-        let context = persistentContainer.viewContext
-//        let fetchRequest = Task.fetchRequest()
-        
-        do {
-            // let taskList: [Task] = try context.fetch(fetchRequest)
-            context.delete(taskToDelete)
-        } catch let error {
-            print("Failed to delete data", error)
-        }
 
-    }
-    
-    private init() {}
 }
