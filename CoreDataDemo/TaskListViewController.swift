@@ -125,7 +125,7 @@ extension TaskListViewController {
 // MARK: - TaskViewControllerDelegate
 extension TaskListViewController: TaskViewControllerDelegate {
     func reloadData() {
-        taskList = StorageManager.shared.fetchData()
+        fetchData()
         tableView.reloadData()
     }
 }
