@@ -52,7 +52,7 @@ class TaskListViewController: UITableViewController {
     }
     
     @objc private func addNewTask() {
-        showAlert(with: "New Task", and: "What do you want to do?")
+        showAlert()
     }
     
     private func save(_ taskName: String) {
@@ -102,22 +102,25 @@ extension TaskListViewController {
         return cell
     }
     
+    // Edit Task
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(taskList[indexPath.row])
+        // снятие выделения с ячейки
+        tableView.deselectRow(at: indexPath, animated: true)
         let taskInCell =  taskList[indexPath.row]
         
-        showAlert(with: "Edit", and: "Edit this task:", selected: taskInCell)
+        showAlert(task: taskInCell) {
+            tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
     }
     
+    // Delete Task
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        let task = taskList[indexPath.row]
+        
         if editingStyle == .delete {
-            let taskInCell =  taskList[indexPath.row]
-            
-            showAlert(
-                with: "Warning!",
-                and: "Do you really want to delete task?",
-                delete: taskInCell
-            )
+            taskList.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+            StorageManager.shared.delete(task)
         }
     }
 }
@@ -131,52 +134,21 @@ extension TaskListViewController: TaskViewControllerDelegate {
 }
 
 extension TaskListViewController {
-    
-    private func showAlert(with title: String, and message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
-            self.save(task)
+    // optional on add -> Task?, completion optional
+    private func showAlert(task: Task? = nil, completion: (() -> Void)? = nil) {
+        let title = task != nil ? "Update Task" : "New Task"
+        let alert = UIAlertController.createAlertController(withTitle: title)
+        
+        alert.action(task: task) { taskName in
+            if let task = task, let completion = completion {
+                StorageManager.shared.edit(task, newName: taskName)
+                completion()
+            } else {
+                self.save(taskName)
+            }
         }
         
-        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
-        
-        alert.addAction(cancelAction)
-        alert.addAction(saveAction)
-        alert.addTextField { textField in
-            textField.placeholder = "New Task"
-        }
         present(alert, animated: true)
     }
     
-    private func showAlert(with title: String, and message: String, selected task: Task) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let taskName = alert.textFields?.first?.text, !taskName.isEmpty else { return }
-            self.edit(existing: task, new: taskName)
-        }
-        
-        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
-        
-        alert.addAction(cancelAction)
-        alert.addAction(saveAction)
-        alert.addTextField { textField in
-            textField.placeholder = "Edit task"
-        }
-        present(alert, animated: true)
-    }
-    
-    private func showAlert(with title: String, and message: String, delete task: Task) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
-            self.deleteTask(task)
-        }
-        
-        let cancelAction = UIAlertAction(title: "Cancel", style: .default)
-        
-        alert.addAction(cancelAction)
-        alert.addAction(deleteAction)
-
-        present(alert, animated: true)
-    }
 }

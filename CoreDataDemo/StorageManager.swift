@@ -40,9 +40,10 @@ class StorageManager {
     }
     
     func save(_ taskName: String, completion: (Task) -> Void) {
+        // быстрое создание модели через контекст, правильнее через EntityDesctiption
         let task = Task(context: viewContext)
         task.title = taskName
-        completion(task)
+        completion(task) //возвращаем в блоке замыкания для возврата в массив
         saveContext()
     }
     
